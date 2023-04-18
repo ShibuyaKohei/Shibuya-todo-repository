@@ -1,2 +1,5 @@
 # Shibuya-todo-repository
-PHP言語応用  完成まで以下計画メモ  a
+PHP言語応用  
+完成まで以下計画メモ  
+
+## 計画 
