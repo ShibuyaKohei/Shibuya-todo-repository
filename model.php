@@ -1,8 +1,20 @@
 <?php
 
-//機能は上へまとめていく
+/*
+クラス、トレイトの種類メモ
+sanitization:サニタイズを行うクラス。
 
-//サニタイズ
+DatabaseHandle:DBを操作するクラスが実装するトレイト。
+
+TodoDataManipulator:todoテーブルの操作を行うクラス。DatabaseHandleを実装。
+
+ViewStrategy:昇順、降順表示用のインターフェイス。
+TodoAscendingStrategy:具象クラス。昇順用。
+TodoDescendingStrategy:具象クラス。降順用。
+TodoViewArranger:コンテキストクラス。昇順または降順でデータをfetchする。
+*/
+
+//サニタイズを行うクラス
 class sanitization
 {
     private $post;
@@ -21,18 +33,19 @@ class sanitization
     }
 }
 
-//DBを操作するクラスが実装するトレイト
-trait DbHandle
+//DBを操作するクラスが実装するトレイト(テーブルは任意)
+trait DatabaseHandle
 {
-    //プロパティ
+    //DB接続お際に用いるプロパティ
     protected $host = "localhost";
     protected $dbname = "PHP_test";
     protected $user = "root";
     protected $pass = "";
 
-    //DBを格納する変数
+    //DBを格納するプロパティ
     protected $dbh;
 
+    //サニタイズ後のpostのデータを格納するプロパティ（個々のクラスのコンストラクタで具体的な中身を格納してもらう）
     protected $sanitizedPost;
 
     //DB接続
@@ -53,8 +66,8 @@ trait DbHandle
         return $this->dbh;
     }
 
-    //CRUDの操作（$sqlを定義してから使用する）
-    protected function crud($sql, $sanitizedPost)
+    //CRUDの操作（$sqlを定義してから使用する） INSERTの場合$sanitizedPostがいらなくなるが、どうする？引数に入れようもないぞ
+    protected function crudExecution(string $sql, array $sanitizedPost)
     {
         try {
             //SQL文のプリペア
@@ -79,11 +92,11 @@ trait DbHandle
     }
     //使用例1（SQL文の実行）
     //$sql = "INSERT INTO PHP_test VALUES (DEFAULT, :title, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
-    //crud($sql)
+    //crudExecution($sql)
 
     //使用例2（SQL文の実行とfetch）
     //$sql='SELECT id,title,content,created_at,updated_at FROM PHP_test WHERE 1';
-    //$stmt = crud($sql)
+    //$stmt = crudExecution($sql)
     //$rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
@@ -98,10 +111,10 @@ trait DbHandle
 
 
 
-//データを操作するクラス(DB接続/切断とサニタイズをしつつ、新規作成/編集/削除)
-class DataManipulation
+//todoテーブルの新規作成、編集、削除を行うクラス
+class TodoDataManipulator
 {
-    use DbHandle;
+    use DatabaseHandle;
 
     //DB接続と$sanitizedPostの格納
     public function __construct($sanitizedPost)
@@ -110,28 +123,38 @@ class DataManipulation
         $this->sanitizedPost = $sanitizedPost;
     }
 
-    //新規作成
+    //新規作成用
     public function create()
     {
         //指定したSQL文に沿ってメソッドcrud()が実行する
-        $sql = "INSERT INTO PHP_test VALUES (DEFAULT, :title, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
-        $this->crud($sql, $this->sanitizedPost);
+        $sql = "INSERT INTO todo VALUES (DEFAULT, :title, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+        $this->crudExecution($sql, $this->sanitizedPost);
     }
 
-    //編集
+    //編集前のテキストボックスに既存のデータをデフォルトで格納する用
+    public function beforeUpdate()
+    {
+        //指定したSQL文に沿ってメソッドcrudExecution()が実行する
+        $sql = $sql="SELECT title,content FROM posts WHERE id=:id";
+        $stmt = $this->crudExecution($sql, $this->sanitizedPost);
+        $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rec;
+    }
+
+    //編集用
     public function update()
     {
-        //指定したSQL文に沿ってメソッドcrud()が実行する
-        $sql = "UPDATE PHP_test SET title=:title, content=:content, updated_at=CURRENT_TIMESTAMP WHERE id=:id";
-        $this->crud($sql, $this->sanitizedPost);
+        //指定したSQL文に沿ってメソッドcrudExecution()が実行する
+        $sql = "UPDATE todo SET title=:title, content=:content, updated_at=CURRENT_TIMESTAMP WHERE id=:id";
+        $this->crudExecution($sql, $this->sanitizedPost);
     }
 
-    //削除
+    //削除用
     public function delete()
     {
-        //指定したSQL文に沿ってメソッドcrud()が実行する
-        $sql = "DELETE FROM PHP_test WHERE id=:id";
-        $this->crud($sql, $this->sanitizedPost);
+        //指定したSQL文に沿ってメソッドcrudExecution()が実行する
+        $sql = "DELETE FROM todo WHERE id=:id";
+        $this->crudExecution($sql, $this->sanitizedPost);
     }
 
     //DB切断
@@ -142,16 +165,16 @@ class DataManipulation
 }
 
 
-//並び替え可能な表示機能
+//以下211行目まで、Todoテーブルの表示機能。昇順と降順を区別するストラテジーパターンで構成。
 interface ViewStrategy
 {
     public function arrange();
 }
 
 //昇順のパターン
-class AscendingViewStrategy implements ViewStrategy
+class TodoAscendingStrategy implements ViewStrategy
 {
-    use DbHandle;
+    use DatabaseHandle;
 
     //$sanitizedPostの格納
     public function __construct($sanitizedPost)
@@ -163,17 +186,18 @@ class AscendingViewStrategy implements ViewStrategy
     public function arrange()
     {
         $this->pdoConnection();
-        $sql='SELECT id,title,content,created_at,updated_at FROM PHP_test WHERE 1 ORDER BY created_at ASC';
-        $stmt = $this->crud($sql, $this->sanitizedPost);
+        $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at ASC';
+        $stmt = $this->crudExecution($sql, $this->sanitizedPost);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->pdoDisconnection();
         return $rec;
     }
 }
 
-class DescendingViewStrategy implements ViewStrategy
+//降順のパターン
+class TodoDescendingStrategy implements ViewStrategy
 {
-    use DbHandle;
+    use DatabaseHandle;
 
     //$sanitizedPostの格納
     public function __construct($sanitizedPost)
@@ -184,18 +208,16 @@ class DescendingViewStrategy implements ViewStrategy
     public function arrange()
     {
         $this->pdoConnection();
-        $sql='SELECT id,title,content,created_at,updated_at FROM PHP_test WHERE 1 ORDER BY created_at DESC';
-        $stmt = $this->crud($sql, $this->sanitizedPost);
+        $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at DESC';
+        $stmt = $this->crudExecution($sql, $this->sanitizedPost);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->pdoDisconnection();
         return $rec;
     }
 }
 
-class ViewArranger
+class TodoViewArranger
 {
-    use DbHandle;
-
     private $strategy;
 
     public function __construct(ViewStrategy $strategy)
@@ -210,10 +232,10 @@ class ViewArranger
 }
 
 //DataManipulationの使用例
-//$controller = new DataManipulation($sanitizedPost);
+//$controller = new TodoDataManipulatior($sanitizedPost);
 //$controller->detete();
 //$controller->update();
 //
 //ViewArrangerの使用例
-//$ascendingArrangement = new ViewArranger(new AscendingStrategy);
+//$ascendingArrangement = new TodoViewArranger(new TodoAscendingStrategy());
 //$data = $ascendingArrangement->arrangement();  view_top.phpで$dataをfor文で回す
