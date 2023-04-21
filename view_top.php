@@ -1,3 +1,12 @@
+<?php
+//コントローラとビューは$_SESSIONでデータのやり取りをする
+session_start();
+session_regenerate_id(true);
+include_once('model_Sanitization.php');
+$sanitizer = new Sanitization();
+$displayData = $sanitizer->sanitizeTwoDimensionalArray($_SESSION['displayData']);
+session_unset();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,9 +34,6 @@
     </tr>
 
     <?php
-    //コントローラとビューは$_SESSIONでデータのやり取りをする
-    session_start();
-    session_regenerate_id(true);
 
     foreach ($displayData as $value) {
         ?>
@@ -49,7 +55,6 @@
             <form method="post" action="view_delete_check.php">
                 <button type="submit" style="padding: 10px;font-size: 16px;">削除する</button>
                 <input name="id" type="hidden" value="<?php echo $value['id'];?>">
-                <input name="request" type="hidden" value="todoDelete">
             </form>
         </td>
     </tr>
@@ -57,7 +62,7 @@
 
     <?php
     }
-    ?>
+?>
 
     </table>
 

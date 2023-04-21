@@ -12,15 +12,15 @@ session_start();
 session_regenerate_id(true);
 
 //modelからクラスを呼び込む
-include_once('model.php');
+include_once('model_Sanitization.php');
+include_once('model_TodoDataManipulator.php');
+include_once('model_TodoViewArranger.php');
 
 //サニタイズ
-$sanitizer = new Sanitization($_POST);
-$sanitizedPost = $sanitizer->sanitize();
-
+$sanitizer = new Sanitization();
+$sanitizedPost = $sanitizer->sanitize($_POST);
 //変数の定義（仕組み上必ず'todoCreate', 'todoBeforeUpdate', 'todoUpdate', 'todoDelete', 'todoAscend', 'todoDescend'のどれかになる。)
 $request = $sanitizedPost['request'];
-
 
 try {
     //todoテーブルの新規作成、編集、削除を行う際の処理
@@ -39,6 +39,7 @@ try {
         //表示用データの取得
         $todoAscender = new TodoViewArranger(new TodoAscendingStrategy());
         $_SESSION['displayData'] = $todoAscender->arrangement();
+
         header('Location:view_top.php');
         exit();
     }
@@ -46,6 +47,7 @@ try {
 
     //編集を行う際のデフォルト値を設定する処理
     if ($request === 'todoBeforeUpdate') {
+        $todoController = new TodoDataManipulator($sanitizedPost);//todoテーブル操作用のインスタンスの生成
         $_SESSION['default'] = $todoController->beforeUpdate();
         header('Location:view_edit.php');
         exit();
