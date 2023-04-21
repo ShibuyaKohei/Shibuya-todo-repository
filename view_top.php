@@ -25,42 +25,48 @@
     </tr>
 
     <?php
+    //コントローラとビューは$_SESSIONでデータのやり取りをする
+    session_start();
+    session_regenerate_id(true);
 
-foreach ($displayData as $value) {
-    ?>
+    foreach ($displayData as $value) {
+        ?>
     <tr>
         
-        <td><?php echo $value['ID'];?></td>
+        <td><?php echo $value['id'];?></td>
         <td><?php echo $value['title']?></td>
         <td><?php echo $value['content']?></td>
         <td><?php echo $value['created_at']?></td>
         <td><?php echo $value['updated_at']?></td>
         <td>
-            <form method="post" action="edit.php">
-                <button type="submit" style="padding: 10px;font-size: 16px;" name="id" value="<?php print $value['ID']?>">編集する</button>
+            <form method="post" action="controller.php">
+                <button type="submit" style="padding: 10px;font-size: 16px;">編集する</button>
+                <input name="id" type="hidden" value="<?php echo $value['id'];?>">
+                <input name="request" type="hidden" value="todoBeforeUpdate">
             </form>
         </td>
         <td>
-            <form method="post" action="model.php">
+            <form method="post" action="view_delete_check.php">
                 <button type="submit" style="padding: 10px;font-size: 16px;">削除する</button>
-                <input name="id" type="hidden" value="<?php print $value['ID'];?>">
-                <input name="request" type="hidden" value="delete">
+                <input name="id" type="hidden" value="<?php echo $value['id'];?>">
+                <input name="request" type="hidden" value="todoDelete">
             </form>
         </td>
     </tr>
 
 
     <?php
-}
+    }
     ?>
 
     </table>
 
     <form method= "post" action="controller.php">
-        <select name="arrange">
-        <option value="ascend">昇順</option>
-        <option value="descend">降順</option>
+        <select name="request">
+        <option value="todoAscend">昇順</option>
+        <option value="todoDescend">降順</option>
         </select>
+        <button type="submit">一覧表示</button>
     </form>
     
 </body>

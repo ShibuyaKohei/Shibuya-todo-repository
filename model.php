@@ -2,20 +2,20 @@
 
 /*
 クラス、トレイトの種類メモ
-sanitization:サニタイズを行うクラス。
+Sanitization:サニタイズを行うクラス。
 
-DatabaseHandle:DBを操作するクラスが実装するトレイト。
+DatabaseHandle:DBを操作するクラスが実装するトレイト。TodoDataManipulator, TodoAscendingStrategy, TodoDescendingStrategyに実装。
 
 TodoDataManipulator:todoテーブルの操作を行うクラス。DatabaseHandleを実装。
 
 ViewStrategy:昇順、降順表示用のインターフェイス。
-TodoAscendingStrategy:具象クラス。昇順用。
-TodoDescendingStrategy:具象クラス。降順用。
+TodoAscendingStrategy:具象クラス。昇順用。DatabaseHandleを実装。
+TodoDescendingStrategy:具象クラス。降順用。DatabaseHandleを実装。
 TodoViewArranger:コンテキストクラス。昇順または降順でデータをfetchする。
 */
 
 //サニタイズを行うクラス
-class sanitization
+class Sanitization
 {
     private $post;
 
@@ -32,6 +32,7 @@ class sanitization
         }
     }
 }
+
 
 //DBを操作するクラスが実装するトレイト(テーブルは任意)
 trait DatabaseHandle
@@ -66,7 +67,7 @@ trait DatabaseHandle
         return $this->dbh;
     }
 
-    //CRUDの操作（$sqlを定義してから使用する） INSERTの場合$sanitizedPostがいらなくなるが、どうする？引数に入れようもないぞ
+    //CRUDの操作（$sqlを定義してから使用する） $sql内の文字列が「WHERE 1」のSELECT文の場合バインドの必要がないため$sanitizedPostが要らなくなるが、その場合は適宜空の配列を定義して引数に格納する
     protected function crudExecution(string $sql, array $sanitizedPost)
     {
         try {
@@ -123,36 +124,42 @@ class TodoDataManipulator
         $this->sanitizedPost = $sanitizedPost;
     }
 
-    //新規作成用
+    //新規作成　$sanitizedPostの内容を使って、バリデーションを行う処理を行わなければならない。
     public function create()
     {
-        //指定したSQL文に沿ってメソッドcrud()が実行する
+        //指定したSQL文に沿ってメソッドcrudExecution()を実行する
         $sql = "INSERT INTO todo VALUES (DEFAULT, :title, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
         $this->crudExecution($sql, $this->sanitizedPost);
     }
 
-    //編集前のテキストボックスに既存のデータをデフォルトで格納する用
+    //編集前のテキストボックスに既存のデータをデフォルトで格納
     public function beforeUpdate()
     {
-        //指定したSQL文に沿ってメソッドcrudExecution()が実行する
-        $sql = $sql="SELECT title,content FROM posts WHERE id=:id";
+        //指定したSQL文に沿ってメソッドcrudExecution()を実行する
+        $sql = $sql="SELECT id,title,content FROM posts WHERE id=:id";
         $stmt = $this->crudExecution($sql, $this->sanitizedPost);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $rec;
     }
 
-    //編集用
+    //編集
     public function update()
     {
-        //指定したSQL文に沿ってメソッドcrudExecution()が実行する
-        $sql = "UPDATE todo SET title=:title, content=:content, updated_at=CURRENT_TIMESTAMP WHERE id=:id";
-        $this->crudExecution($sql, $this->sanitizedPost);
+        //もし「0<タイトル<31」かつ「0<内容」でなかったら、強制的に失敗ページに飛ばす処理
+        if((0 < $this->sanitizedPost['title'] && $this->sanitizedPost['title'] < 31 && 0 < $this->sanitizedPost['content']) === false){
+            header('view_edit_ng.html');
+            exit();
+        }else{
+            //指定したSQL文に沿ってメソッドcrudExecution()を実行する
+            $sql = "UPDATE todo SET title=:title, content=:content, updated_at=CURRENT_TIMESTAMP WHERE id=:id";
+            $this->crudExecution($sql, $this->sanitizedPost);
+        }
     }
 
-    //削除用
+    //削除
     public function delete()
     {
-        //指定したSQL文に沿ってメソッドcrudExecution()が実行する
+        //指定したSQL文に沿ってメソッドcrudExecution()を実行する
         $sql = "DELETE FROM todo WHERE id=:id";
         $this->crudExecution($sql, $this->sanitizedPost);
     }
@@ -176,18 +183,13 @@ class TodoAscendingStrategy implements ViewStrategy
 {
     use DatabaseHandle;
 
-    //$sanitizedPostの格納
-    public function __construct($sanitizedPost)
-    {
-        $this->sanitizedPost = $sanitizedPost;
-    }
-
     //昇順のデータを$recに格納して与える
     public function arrange()
     {
         $this->pdoConnection();
         $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at ASC';
-        $stmt = $this->crudExecution($sql, $this->sanitizedPost);
+        $void = [];//SELECT文にはバインドするための具体的なid, title, contentが存在しないので、crudExecutionの第２引数部分に空の配列を格納。
+        $stmt = $this->crudExecution($sql, $void);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->pdoDisconnection();
         return $rec;
@@ -199,17 +201,12 @@ class TodoDescendingStrategy implements ViewStrategy
 {
     use DatabaseHandle;
 
-    //$sanitizedPostの格納
-    public function __construct($sanitizedPost)
-    {
-        $this->sanitizedPost = $sanitizedPost;
-    }
-
     public function arrange()
     {
         $this->pdoConnection();
         $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at DESC';
-        $stmt = $this->crudExecution($sql, $this->sanitizedPost);
+        $void = []; //SELECT文にはバインドするための具体的なid, title, contentが存在しないので、crudExecutionの第２引数部分に空の配列を格納。
+        $stmt = $this->crudExecution($sql, $void);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->pdoDisconnection();
         return $rec;
