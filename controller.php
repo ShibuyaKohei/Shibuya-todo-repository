@@ -37,7 +37,7 @@ try {
         }
 
         //表示用データの取得
-        $todoAscender = new TodoFetchArranger(new TodoAscendingStrategy());
+        $todoAscender = new TodoFetchArranger(new TodoCreateAscend());
         $_SESSION['displayData'] = $todoAscender->arrangement();
 
         header('Location:view_top.php');
@@ -58,7 +58,7 @@ try {
 
     //昇順
     if ($request === 'todoAscend') {
-        $todoAscender = new TodoFetchArranger(new TodoAscendingStrategy());
+        $todoAscender = new TodoFetchArranger(new TodoCreateAscend());
         $_SESSION['displayData'] = $todoAscender->arrangement();
         header('Location:view_top.php');
         exit();
@@ -66,7 +66,7 @@ try {
 
     //降順
     if ($request === 'todoDescend') {
-        $todoDescender = new TodoFetchArranger(new TodoDescendingStrategy());
+        $todoDescender = new TodoFetchArranger(new TodoUpdateAscend());
         $_SESSION['displayData'] = $todoDescender->arrangement();
         header('Location:view_top.php');
         exit();

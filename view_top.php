@@ -66,8 +66,8 @@ session_unset();
 
     <form method= "post" action="controller.php">
         <select name="request">
-        <option value="todoAscend">昇順</option>
-        <option value="todoDescend">降順</option>
+        <option value="todoAscend">作成日時の昇順</option>
+        <option value="todoDescend">更新日時の昇順</option>
         </select>
         <button type="submit">一覧表示</button>
     </form>

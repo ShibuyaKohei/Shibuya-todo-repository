@@ -10,7 +10,7 @@ interface FetchStrategy
 }
 
 //昇順の具象クラス
-class TodoAscendingStrategy implements FetchStrategy
+class TodoCreateAscend implements FetchStrategy
 {
     use DatabaseHandle;
 
@@ -28,14 +28,14 @@ class TodoAscendingStrategy implements FetchStrategy
 }
 
 //降順の具象クラス
-class TodoDescendingStrategy implements FetchStrategy
+class TodoUpdateAscend implements FetchStrategy
 {
     use DatabaseHandle;
 
     public function arrange()
     {
         $this->pdoConnection();
-        $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at DESC';
+        $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY updated_at ASC';
         $void = []; //$sqlにはバインドするための具体的なid, title, contentが存在しないので、sqlExecutionの第２引数部分に空の配列を格納。
         $stmt = $this->sqlExecution($sql, $void);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
