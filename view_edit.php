@@ -1,4 +1,5 @@
 <?php
+//コントローラとビューは$_SESSIONでデータのやり取りをする
 session_start();
 session_regenerate_id(true);
 include_once('model_Sanitization.php');
@@ -20,7 +21,7 @@ session_unset();
 
 
 <h1>
-    Edit Todo Page
+    編集
 </h1>
 <form method="post" action="controller.php">
     <div style="margin: 10px">

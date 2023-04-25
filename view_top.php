@@ -21,7 +21,7 @@ session_unset();
     <form action="view_create.html">
         <button type="submit" style="padding: 10px;font-size: 16px;margin-bottom: 10px">新規作成</button>
     </form>
-
+    <h4>タイトルをクリックすると編集が行えます</h4>
     <table border="1">
     <tr>
         <th>ID</th>
@@ -29,7 +29,6 @@ session_unset();
         <th>内容</th>
         <th>作成日時</th>
         <th>更新日時</th>
-        <th>編集</th>
         <th>削除</th>
     </tr>
 
@@ -40,17 +39,16 @@ session_unset();
     <tr>
         
         <td><?php echo $value['id'];?></td>
-        <td><?php echo $value['title']?></td>
-        <td><?php echo $value['content']?></td>
-        <td><?php echo $value['created_at']?></td>
-        <td><?php echo $value['updated_at']?></td>
         <td>
             <form method="post" action="controller.php">
-                <button type="submit" style="padding: 10px;font-size: 16px;">編集する</button>
+                <button type="submit" style="padding: 15px;font-size: 16px; color: blue;border: none;background: transparent;"><?php echo $value['title']?></button>
                 <input name="id" type="hidden" value="<?php echo $value['id'];?>">
                 <input name="request" type="hidden" value="todoBeforeUpdate">
             </form>
         </td>
+        <td><?php echo $value['content']?></td>
+        <td><?php echo $value['created_at']?></td>
+        <td><?php echo $value['updated_at']?></td>
         <td>
             <form method="post" action="view_delete_check.php">
                 <button type="submit" style="padding: 10px;font-size: 16px;">削除する</button>

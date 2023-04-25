@@ -3,6 +3,7 @@
 include_once('model_DatabaseHandle.php');
 
 //todoテーブルの新規作成、編集、削除を行うクラス
+//トレイトDatabaseHandleの実装が必要
 class TodoDataManipulator
 {
     use DatabaseHandle;
@@ -14,17 +15,17 @@ class TodoDataManipulator
         $this->sanitizedPost = $sanitizedPost;
     }
 
-    //新規作成　$sanitizedPostの内容を使って、バリデーションを行う処理を行わなければならない。
+    //新規作成
     public function create()
     {
-        //もし「0<タイトルの文字数<31」かつ「0<内容の文字数」でなかったら、強制的に失敗ページに飛ばす処理
+        //もし「「0<(タイトルの文字数)<31」かつ「0<(内容の文字数)」」が偽だったら、強制的に失敗ページに飛ばす処理
         if ((0 < mb_strlen($this->sanitizedPost['title']) && mb_strlen($this->sanitizedPost['title']) < 31 && 0 < mb_strlen($this->sanitizedPost['content'])) === false) {
             header('Location:view_ng.html');
             exit();
         } else {
             //指定したSQL文に沿ってメソッドcrudExecution()を実行する
             $sql = "INSERT INTO todo VALUES (DEFAULT, :title, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
-            $this->crudExecution($sql, $this->sanitizedPost);
+            $this->sqlExecution($sql, $this->sanitizedPost);
         }
     }
 
@@ -33,7 +34,7 @@ class TodoDataManipulator
     {
         //指定したSQL文に沿ってメソッドcrudExecution()を実行する
         $sql = $sql="SELECT id,title,content FROM todo WHERE id=:id";
-        $stmt = $this->crudExecution($sql, $this->sanitizedPost);
+        $stmt = $this->sqlExecution($sql, $this->sanitizedPost);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $rec;
     }
@@ -41,23 +42,23 @@ class TodoDataManipulator
     //編集
     public function update()
     {
-        //もし「0<タイトルの文字数<31」かつ「0<内容の文字数」でなかったら、強制的に編集失敗ページに飛ばす処理
+        //もし「「0<(タイトルの文字数)<31」かつ「0<(内容の文字数)」」が偽だったら、強制的に失敗ページに飛ばす処理
         if ((0 < mb_strlen($this->sanitizedPost['title']) && mb_strlen($this->sanitizedPost['title']) < 31 && 0 < mb_strlen($this->sanitizedPost['content'])) === false) {
             header('Location:view_ng.html');
             exit();
         } else {
-            //指定したSQL文に沿ってメソッドcrudExecution()を実行する
+            //指定したSQL文に沿ってメソッドsqlExecution()を実行する
             $sql = "UPDATE todo SET title=:title, content=:content, updated_at=CURRENT_TIMESTAMP WHERE id=:id";
-            $this->crudExecution($sql, $this->sanitizedPost);
+            $this->sqlExecution($sql, $this->sanitizedPost);
         }
     }
 
     //削除
     public function delete()
     {
-        //指定したSQL文に沿ってメソッドcrudExecution()を実行する
+        //指定したSQL文に沿ってメソッドsqlExecution()を実行する
         $sql = "DELETE FROM todo WHERE id=:id";
-        $this->crudExecution($sql, $this->sanitizedPost);
+        $this->sqlExecution($sql, $this->sanitizedPost);
     }
 
     //DB切断

@@ -1,5 +1,6 @@
 <?php
 
+//データベースの操作を行うクラスに実装するトレイト
 trait DatabaseHandle
 {
     //DB接続の際に用いるプロパティ
@@ -33,20 +34,20 @@ trait DatabaseHandle
     }
 
     //CRUDの操作（$sqlを定義してから使用する） $sql内の文字列が「WHERE 1」のSELECT文の場合バインドの必要がないため$sanitizedPostが要らなくなるが、その場合は適宜空の配列を定義して引数に格納する
-    protected function crudExecution(string $sql, array $sanitizedPost)
+    protected function sqlExecution(string $sql, array $sqlParams)
     {
         try {
             //SQL文の準備
             $stmt = $this->dbh->prepare($sql);
             //SQL文にバインドする箇所があったらその都度バインドする
             if (strpos($sql, ':id')) {
-                $stmt->bindParam(":id", $sanitizedPost['id'], PDO::PARAM_INT);
+                $stmt->bindParam(":id", $sqlParams['id'], PDO::PARAM_INT);
             }
             if (strpos($sql, ':title')) {
-                $stmt->bindParam(":title", $sanitizedPost['title'], PDO::PARAM_STR);
+                $stmt->bindParam(":title", $sqlParams['title'], PDO::PARAM_STR);
             }
             if (strpos($sql, ':content')) {
-                $stmt->bindParam(":content", $sanitizedPost['content'], PDO::PARAM_STR);
+                $stmt->bindParam(":content", $sqlParams['content'], PDO::PARAM_STR);
             }
             //実行
             $stmt->execute();

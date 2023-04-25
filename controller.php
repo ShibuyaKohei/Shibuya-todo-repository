@@ -14,7 +14,7 @@ session_regenerate_id(true);
 //modelからクラスを呼び込む
 include_once('model_Sanitization.php');
 include_once('model_TodoDataManipulator.php');
-include_once('model_TodoViewArranger.php');
+include_once('model_TodoFetchArranger.php');
 
 //サニタイズ
 $sanitizer = new Sanitization();
@@ -25,19 +25,19 @@ $request = $sanitizedPost['request'];
 try {
     //todoテーブルの新規作成、編集、削除を行う際の処理
     if (in_array($request, ['todoCreate','todoUpdate','todoDelete'])) {
-        $todoController = new TodoDataManipulator($sanitizedPost);//todoテーブル操作用のインスタンスの生成
+        $todoModel = new TodoDataManipulator($sanitizedPost);//todoテーブル操作用のインスタンスの生成
 
         //データベースの操作
         if ($request === 'todoCreate') {
-            $todoController->create();
+            $todoModel->create();
         } elseif ($request === 'todoUpdate') {
-            $todoController->update();
+            $todoModel->update();
         } elseif ($request === 'todoDelete') {
-            $todoController->delete();
+            $todoModel->delete();
         }
 
         //表示用データの取得
-        $todoAscender = new TodoViewArranger(new TodoAscendingStrategy());
+        $todoAscender = new TodoFetchArranger(new TodoAscendingStrategy());
         $_SESSION['displayData'] = $todoAscender->arrangement();
 
         header('Location:view_top.php');
@@ -47,8 +47,8 @@ try {
 
     //編集を行う際のデフォルト値を設定する処理
     if ($request === 'todoBeforeUpdate') {
-        $todoController = new TodoDataManipulator($sanitizedPost);//todoテーブル操作用のインスタンスの生成
-        $_SESSION['default'] = $todoController->beforeUpdate();
+        $todoModel = new TodoDataManipulator($sanitizedPost);//todoテーブル操作用のインスタンスの生成
+        $_SESSION['default'] = $todoModel->beforeUpdate();
         header('Location:view_edit.php');
         exit();
     }
@@ -58,7 +58,7 @@ try {
 
     //昇順
     if ($request === 'todoAscend') {
-        $todoAscender = new TodoViewArranger(new TodoAscendingStrategy());
+        $todoAscender = new TodoFetchArranger(new TodoAscendingStrategy());
         $_SESSION['displayData'] = $todoAscender->arrangement();
         header('Location:view_top.php');
         exit();
@@ -66,7 +66,7 @@ try {
 
     //降順
     if ($request === 'todoDescend') {
-        $todoDescender = new TodoViewArranger(new TodoDescendingStrategy());
+        $todoDescender = new TodoFetchArranger(new TodoDescendingStrategy());
         $_SESSION['displayData'] = $todoDescender->arrangement();
         header('Location:view_top.php');
         exit();

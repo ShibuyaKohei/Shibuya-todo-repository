@@ -1,14 +1,16 @@
 <?php
 
 //Todoテーブルの表示用に昇順、降順を区別してデータをfetchするストラテジーパターン
+//トレイトDatabaseHandleの実装が必要
 
-interface ViewStrategy
+//具象クラス用のインターフェイス
+interface FetchStrategy
 {
     public function arrange();
 }
 
-//昇順のパターン
-class TodoAscendingStrategy implements ViewStrategy
+//昇順の具象クラス
+class TodoAscendingStrategy implements FetchStrategy
 {
     use DatabaseHandle;
 
@@ -17,16 +19,16 @@ class TodoAscendingStrategy implements ViewStrategy
     {
         $this->pdoConnection();
         $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at ASC';
-        $void = [];//$sqlにはバインドするための具体的なid, title, contentが存在しないので、crudExecutionの第２引数部分に空の配列を格納。
-        $stmt = $this->crudExecution($sql, $void);
+        $void = [];//$sqlにはバインドするための具体的なid, title, contentが存在しないので、sqlExecutionの第２引数部分に空の配列を格納。
+        $stmt = $this->sqlExecution($sql, $void);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->pdoDisconnection();
         return $rec;
     }
 }
 
-//降順のパターン
-class TodoDescendingStrategy implements ViewStrategy
+//降順の具象クラス
+class TodoDescendingStrategy implements FetchStrategy
 {
     use DatabaseHandle;
 
@@ -34,19 +36,20 @@ class TodoDescendingStrategy implements ViewStrategy
     {
         $this->pdoConnection();
         $sql='SELECT id,title,content,created_at,updated_at FROM todo WHERE 1 ORDER BY created_at DESC';
-        $void = []; //$sqlにはバインドするための具体的なid, title, contentが存在しないので、crudExecutionの第２引数部分に空の配列を格納。
-        $stmt = $this->crudExecution($sql, $void);
+        $void = []; //$sqlにはバインドするための具体的なid, title, contentが存在しないので、sqlExecutionの第２引数部分に空の配列を格納。
+        $stmt = $this->sqlExecution($sql, $void);
         $rec = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->pdoDisconnection();
         return $rec;
     }
 }
 
-class TodoViewArranger
+//コンテキストクラス
+class TodoFetchArranger
 {
     private $strategy;
 
-    public function __construct(ViewStrategy $strategy)
+    public function __construct(FetchStrategy $strategy)
     {
         $this->strategy = $strategy;
     }
